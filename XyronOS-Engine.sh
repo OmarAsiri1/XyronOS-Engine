@@ -2,7 +2,7 @@
 # ==============================================================================
 # PROJECT: XyronOS Build Engine
 # ARCHITECT: $(whoami)
-# VERSION: 1.0
+# VERSION: 2026.1.1
 # DESCRIPTION: Zero-Touch Arch-based ISO Factory (Full Automation)
 # ==============================================================================
 
@@ -12,7 +12,7 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 GOLD='\033[0;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 # --- [ 2. BRANDING BANNER ] ---
 show_banner() {
@@ -31,22 +31,19 @@ show_banner() {
 check_env() {
     echo -e "${CYAN}[*] Performing Pre-Flight Checks...${NC}"
     
-    # Check for Root (Should not be run as root directly)
     if [ "$EUID" -eq 0 ]; then 
         echo -e "${RED}[!] Critical: Do not run this engine as root. It handles sudo internally.${NC}"
         exit 1
     fi
     
-    # Check Disk Space (Require at least 25GB free)
     FREE_SPACE=$(df -k . | awk 'NR==2 {print $4}')
     if [ "$FREE_SPACE" -lt 26214400 ]; then
         echo -e "${RED}[!] Error: Insufficient disk space. Need at least 25GB.${NC}"
         exit 1
     fi
     
-    # Check Internet Connection
     if ! ping -c 1 8.8.8.8 &>/dev/null; then
-        echo -e "${RED}[!] Error: No internet connection detected. Build aborted.${NC}"
+        echo -e "${RED}[!] Error: No internet connection detected.${NC}"
         exit 1
     fi
 }
@@ -80,14 +77,14 @@ update_host() {
 # --- [ 6. TUI CONFIGURATION ] ---
 get_user_choices() {
     DE=$(whiptail --title "XyronOS Architect" --menu "Select Desktop Environment:" 15 60 4 \
-    "gnome" "GNOME Desktop (Standard)" \
-    "kde" "KDE Plasma (Customizable)" \
-    "xfce" "XFCE (Lightweight)" \
-    "sway" "Sway (Wayland Tiling)" 3>&1 1>&2 2>&3)
+    "gnome" "GNOME Desktop" \
+    "kde" "KDE Plasma" \
+    "xfce" "XFCE Desktop" \
+    "sway" "Sway Manager" 3>&1 1>&2 2>&3)
 
     GREETER=$(whiptail --title "XyronOS Architect" --menu "Select Display Manager:" 15 60 3 \
-    "gdm" "GDM (Standard for GNOME)" \
-    "sddm" "SDDM (Standard for KDE)" \
+    "gdm" "GDM (GNOME)" \
+    "sddm" "SDDM (KDE)" \
     "lightdm" "LightDM (Universal)" 3>&1 1>&2 2>&3)
 }
 
@@ -97,7 +94,6 @@ prepare_configs() {
     mkdir -p "$OUT_DIR"
     touch "$SERIAL_LOG"
 
-    # Automated Archinstall JSON
     cat <<EOF > "$OUT_DIR/user_config.json"
 {
     "audio": "pipewire",
@@ -113,7 +109,6 @@ prepare_configs() {
 }
 EOF
 
-    # Internal ISO Finalizer Script
     cat <<EOF > "$OUT_DIR/finalize.sh"
 #!/bin/bash
 echo ">>> Starting Final ISO Compilation inside VM..."
@@ -149,4 +144,5 @@ vm_type() {
 
 # --- [ 9. VM LAB EXECUTION ] ---
 launch_factory() {
-    echo -e "${GOLD
+    echo -e "${GOLD}[Phase 2] Launching Virtual Laboratory...${NC}"
+    if [ ! -f "$ISO_BASE"
