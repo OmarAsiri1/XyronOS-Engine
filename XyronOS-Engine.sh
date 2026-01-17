@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==============================================================================
-# XyronOS Engine - ZERO-USER INTERACTION (Universal Version)
-# Architect: XyronOS Development Team
+# XyronOS Engine 
+# Architect: OmarAsiri1
 # ==============================================================================
 
 # --- 1. THE WELCOME SCREEN ---
@@ -41,7 +41,7 @@ fi
 
 # --- 3. USER SELECTION ---
 DE=$(whiptail --title "Selection" --menu "Select Desktop Environment:" 15 60 4 \
-"gnome" "GNOME" "kde" "KDE Plasma" "xfce" "XFCE" "sway" "Sway" 3>&1 1>&2 2>&3)
+"GNOME" "GNOME" "KDE" "KDE Plasma" "xfce" "XFCE" "sway" "Sway" 3>&1 1>&2 2>&3)
 
 GREETER=$(whiptail --title "Selection" --menu "Select Login Greeter:" 15 60 3 \
 "gdm" "GDM" "sddm" "SDDM" "lightdm" "LightDM" 3>&1 1>&2 2>&3)
