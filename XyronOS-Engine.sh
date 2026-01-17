@@ -1,109 +1,68 @@
 #!/bin/bash
+# XyronOS Engine - Professional ISO Architect
+# Architect: OmarAsiri1 in 2026
 
-# ==============================================================================
-# XyronOS Engine - Universal TUI Developer Suite
-# Architect: Omar 
-# ==============================================================================
+# --- 1. SETUP & SELECTION ---
+BASE_DIR="$HOME/XyronOS-Engine"
+OUT_DIR="$BASE_DIR/ISO_Output"
+VM_DISK="$BASE_DIR/build_disk.qcow2"
+mkdir -p "$OUT_DIR"
 
-# Variables
-TITLE="XyronOS Engine 26.0"
-WORK_DIR="$HOME/XyronOS_Workspace"
-ISO_URL="https://mirror.rackspace.com/archlinux/iso/latest/archlinux-x86_64.iso"
-ISO_FILE="$WORK_DIR/base_arch.iso"
+# UI for User Choices
+DE=$(whiptail --title "XyronOS Selection" --menu "Select your Desktop Environment:" 15 60 4 \
+"gnome" "GNOME Desktop" \
+"kde" "KDE Plasma" \
+"xfce" "XFCE (Lightweight)" \
+"sway" "Sway (Tiling WM)" 3>&1 1>&2 2>&3)
 
-# --- Root Check ---
-if [[ $EUID -ne 0 ]]; then
-   echo "Error: Please run as root (sudo ./XyronOS-Engine.sh)"
-   exit 1
-fi
+GREETER=$(whiptail --title "Greeter Selection" --menu "Select your Login Manager (Greeter):" 15 60 3 \
+"gdm" "GDM (Standard for GNOME)" \
+"sddm" "SDDM (Standard for KDE)" \
+"lightdm" "LightDM (Universal)" 3>&1 1>&2 2>&3)
 
-# --- 1. Auto-Dependency Installer ---
-install_deps() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        DISTRO=$ID
-    else
-        exit 1
-    fi
+# --- 2. ASSET PREP ---
+[ ! -f "$BASE_DIR/arch.iso" ] && wget -O "$BASE_DIR/arch.iso" "https://mirror.rackspace.com/archlinux/iso/latest/archlinux-x86_64.iso"
+[ ! -f "$VM_DISK" ] && qemu-img create -f qcow2 "$VM_DISK" 40G
 
-    echo "Checking dependencies for $DISTRO..."
-    case $DISTRO in
-        arch|manjaro) pacman -Sy --needed wget qemu-full proot libnewt cdrtools --noconfirm ;;
-        debian|ubuntu|pop) apt update && apt install -y wget qemu-system-x86 proot whiptail genisoimage ;;
-        fedora) dnf install -y wget qemu-system-x86 proot newt genisoimage ;;
-        alpine) apk add bash wget qemu-system-x86_64 proot newt cdrkit ;;
-    esac
-}
+# --- 3. INTERNAL AUTOMATION SCRIPT (The Factory) ---
+# This script is sent to the VM to build the ISO based on YOUR choices
+cat <<EOF > "$OUT_DIR/finalize.sh"
+#!/bin/bash
+echo "--- Installing Build Tools ---"
+sudo pacman -Sy --noconfirm archiso
+mkdir -p ~/iso_build && cp -r /usr/share/archiso/configs/releng/* ~/iso_build/
 
-# --- 2. TUI Functions ---
+echo "--- Customizing packages.x86_64 ---"
+pacman -Qqn > ~/iso_build/packages.x86_64
+echo "$DE" >> ~/iso_build/packages.x86_64
+echo "$GREETER" >> ~/iso_build/packages.x86_64
 
-fetch_iso() {
-    mkdir -p "$WORK_DIR"
-    if [ -f "$ISO_FILE" ]; then
-        whiptail --title "Download" --yesno "ISO already exists. Redownload?" 8 45 || return
-    fi
-    
-    # Downloading with progress bar
-    wget -c "$ISO_URL" -O "$ISO_FILE" 2>&1 | \
-    stdbuf -o0 awk '/[0-9]+%/ {print substr($0, index($0, "%")-3, 3)}' | \
-    whiptail --title "XyronOS Fetcher" --gauge "Downloading latest Arch ISO..." 8 50 0
-    
-    whiptail --title "Success" --msgbox "Base ISO fetched successfully to $ISO_FILE" 8 45
-}
+echo "--- Enabling Services ---"
+mkdir -p ~/iso_build/airootfs/etc/systemd/system/display-manager.service.d/
+sudo systemctl enable $GREETER
 
-modify_env() {
-    if [ ! -f "$ISO_FILE" ]; then
-        whiptail --title "Error" --msgbox "Download the ISO first!" 8 45
-        return
-    fi
-    
-    MOD_DIR="$WORK_DIR/Xyron_Mod_Files"
-    mkdir -p "$MOD_DIR"
-    
-    whiptail --title "Proot Shell" --msgbox "Entering proot shell. \n\n1. Edit files in /mnt \n2. Type 'exit' to return." 10 50
-    
-    # Enter proot
-    proot -0 -b "$MOD_DIR:/mnt" /bin/bash
-}
+echo "--- Compiling Final XyronOS ISO ---"
+cd ~/iso_build && sudo mkarchiso -v -w /tmp/work -o /tmp/out .
 
-debug_iso() {
-    if [ ! -f "$ISO_FILE" ]; then
-        whiptail --title "Error" --msgbox "ISO file not found!" 8 45
-        return
-    fi
+echo "--- Pushing ISO to Host Folder ---"
+sudo mount -t 9p -o trans=virtio hostshare /mnt
+sudo cp /tmp/out/*.iso /mnt/XyronOS-Final.iso
+EOF
+chmod +x "$OUT_DIR/finalize.sh"
 
-    RAM=$(whiptail --title "Memory Setup" --inputbox "Enter RAM size (MB):" 8 45 "2048" 3>&1 1>&2 2>&3)
-    
-    echo "Launching QEMU Debugger..."
-    qemu-system-x86_64 \
-        -m $RAM \
-        -enable-kvm \
-        -cpu host \
-        -cdrom "$ISO_FILE" \
-        -boot d \
-        -device virtio-vga-gl -display gtk,gl=on \
-        -net nic -net user \
-        -name "XyronOS Preview" &
-    
-    whiptail --title "QEMU" --msgbox "QEMU is running in the background. Check the new window." 8 45
-}
+# --- 4. LAUNCHING THE ENVIRONMENT ---
+whiptail --msgbox "Launching VM. \n1. Run 'archinstall' & select $DE.\n2. Customize everything.\n3. Run /mnt/finalize.sh to push the ISO." 12 60
 
-# --- 3. Main Loop ---
-install_deps
-clear
+qemu-system-x86_64 \
+    -m 4G -enable-kvm -cpu host -smp 4 \
+    -drive file="$VM_DISK",if=virtio \
+    -cdrom "$BASE_DIR/arch.iso" -boot d \
+    -net nic -net user \
+    -virtfs local,path="$OUT_DIR",mount_tag=hostshare,security_model=none,id=hostshare \
+    -device virtio-vga-gl -display gtk,gl=on &
 
-while true; do
-    CHOICE=$(whiptail --title "$TITLE" --menu "Select an action to build your XyronOS ISO:" 15 60 4 \
-    "1" "Fetch Latest Arch ISO" \
-    "2" "Modify Environment (Proot)" \
-    "3" "Debug ISO (QEMU GUI)" \
-    "4" "Exit" 3>&1 1>&2 2>&3)
+# --- 5. THE WATCHER ---
+echo "Waiting for $DE ISO production..."
+while [ ! -f "$OUT_DIR/XyronOS-Final.iso" ]; do sleep 10; done
 
-    case $CHOICE in
-        1) fetch_iso ;;
-        2) modify_env ;;
-        3) debug_iso ;;
-        4) clear; exit ;;
-        *) clear; exit ;;
-    esac
-done
+whiptail --title "Complete" --msgbox "Success! Your $DE ISO is ready in the XyronOS-Engine folder." 10 60
