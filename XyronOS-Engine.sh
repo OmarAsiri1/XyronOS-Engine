@@ -108,4 +108,4 @@ qemu-system-x86_64 \
 
 # --- 8. SUCCESS WATCHER ---
 while [ ! -f "$OUT_DIR/XyronOS-Final.iso" ]; do sleep 10; done
-whiptail --title "Victory" --msgbox "Mission Complete, Omar! ISO ready." 10 60
+whiptail --title "Victory" --msgbox "Mission Complete, ISO ready." 10 60
