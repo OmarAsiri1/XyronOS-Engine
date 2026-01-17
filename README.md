@@ -18,7 +18,7 @@ The engine is engineered to run on almost any host environment. Whether you are 
 
 1.  **Clone & Prepare:**
     ```bash
-    git clone [https://github.com/](https://github.com/)[Your-Username]/XyronOS-Engine.git
+    git clone https://github.oom/OmarAsiri1/XyronOS-Engine/
     cd XyronOS-Engine
     chmod +x XyronOS-Engine.sh
     ```
