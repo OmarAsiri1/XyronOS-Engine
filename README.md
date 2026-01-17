@@ -38,5 +38,5 @@ The engine is engineered to run on almost any host environment. Whether you are 
 Your contribution matters. Every tweak, every package selection, and every theme modification helps us understand what the community needs. Build your version, test it, and let's make XyronOS legendary together.
 
 ---
-**Maintained by:** Omar (Honor Level Expert 😎)  
+**Maintained by:** OmarAsiri1
 **Status:** Open for Development & Inspiration
