@@ -2,7 +2,7 @@
 # ==============================================================================
 # PROJECT: XyronOS Build Engine
 # ARCHITECT: $(whoami)
-# VERSION: 2026.1.1
+# VERSION: 1.0
 # DESCRIPTION: Zero-Touch Arch-based ISO Factory (Full Automation)
 # ==============================================================================
 
