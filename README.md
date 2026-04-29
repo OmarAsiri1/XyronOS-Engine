@@ -1,3 +1,6 @@
+#**PLEASE DO NOT INSTALL THE ENGINE RIGHT NOW, THERE IS TO MANY PROBLEMES AND THE SCRIPT IS NOT FULL YET!!!**
+
+
 # 🚀 XyronOS Engine: Build Your Own Evolution
 
 **XyronOS Engine** is the core toolkit designed to empower developers. This is more than just a tool; it's an invitation for you to **create your own XyronOS ISO** and contribute to the evolution of the ultimate developer-focused operating system.
